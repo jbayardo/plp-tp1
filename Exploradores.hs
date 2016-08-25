@@ -1,5 +1,7 @@
 module Exploradores (Explorador, AB(Nil,Bin), RoseTree(Rose), foldNat, foldRT, foldAB, expNulo, expId, expHijosRT, expHijosAB, expTail, ifExp, singletons, sufijos, inorder, preorder, postorder, dfsRT, ramasRT, hojasRT, listasQueSuman, listasDeLongitud, (<.>), (<^>), (<++>), (<*>)) where
 
+import Prelude hiding ((<*>))
+
 --Definiciones de tipos
 
 type Explorador a b = a -> [b]
@@ -42,7 +44,8 @@ expHijosAB Nil = []
 expHijosAB (Bin i v d) = [i, d]
 
 expTail :: Explorador [a] a
-expTail = tail
+expTail [] = []
+expTail (x:xs) = xs
 
 --Ejercicio 2
 foldNat :: b -> (Integer -> b -> b) -> Integer -> b
@@ -69,48 +72,53 @@ listasQueSuman :: Explorador Integer [Integer]
 listasQueSuman 0 = [[]]
 listasQueSuman n = [(n - x):ys | x <- [0..n-1], ys <- listasQueSuman x]
 
-listasQueSuman :: Explorador Integer [Integer]
-listasQueSuman = foldNat [[]] (\n b -> [(n - x):ys | x <- [0..n-1], ys <- listasQueSuman x])
+-- El esquema foldNat no es adecuado para resolver este problema porque son necesarios resultados
+-- no solo para n-1, sino tambien para n-x (concretamente, no es posible simplemente colocar el valor
+-- acumulado que se le pasa a la funcion de fold en el lugar de "listasQueSuman x", pues el x es variable)
+-- La forma de implementar esto con folds es utilizando un fold cuyo valor acumulado sea
+-- una funcion capaz de computar listas que suman hasta el n, junto con todas las anteriores.
 
 --Ejercicio 5
---preorder :: undefined
-preorder = undefined
+preorder :: Explorador (AB a) a
+preorder = foldAB [] (\l v r -> v:l ++ r)
 
---inorder :: undefined
-inorder = undefined
+inorder :: Explorador (AB a) a
+inorder = foldAB [] (\l v r -> l ++ v:r)
 
---postorder :: undefined
-postorder = undefined
+postorder :: Explorador (AB a) a
+postorder = foldAB [] (\l v r -> l ++ r ++ [v])
 
 --Ejercicio 6
 dfsRT :: Explorador (RoseTree a) a
-dfsRT = undefined
+dfsRT = foldRT pure (\a bs -> a : concat bs)
 
 hojasRT :: Explorador (RoseTree a) a
-hojasRT = undefined
+hojasRT = foldRT pure (\_ -> concat)
 
 ramasRT :: Explorador (RoseTree a) [a]
-ramasRT = undefined
+ramasRT = foldRT (pure . pure) (\a -> (map (a:)) . concat)
 
 --Ejercicio 7
 ifExp :: (a->Bool) -> Explorador a b -> Explorador a b -> Explorador a b
-ifExp = undefined
+ifExp cond f g a
+    | cond a = f a
+    | otherwise = g a
 
 --Ejercicio 8
 (<++>) :: Explorador a b -> Explorador a b -> Explorador a b
-(<++>) = undefined
+(<++>) f g a = f a ++ g a 
 
 --Ejercicio 9
 (<.>) :: Explorador b c -> Explorador a b -> Explorador a c
-(<.>) = undefined
+(<.>) g f = concat . (map g) . f
  
 --Ejercicio 10
 (<^>) :: Explorador a a -> Integer -> Explorador a a
-(<^>) = undefined
+(<^>) f = foldNat pure (\_ g -> (<.>) f g)
 
 --Ejercicio 11 (implementar al menos una de las dos)
 listasDeLongitud :: Explorador Integer [Integer]
 listasDeLongitud = undefined
 
---(<*>) :: Explorador a a -> Explorador a [a] 
---(<*>) = undefined
+(<*>) :: Explorador a a -> Explorador a [a] 
+(<*>) f a = takeWhile (not . null) $ iterate (concat . (map f)) [a]

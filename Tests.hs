@@ -3,6 +3,8 @@ import Exploradores
 import Test.HUnit
 import Data.List
 
+import Prelude hiding ((<*>))
+
 --Nota: para poder cargar este archivo es necesario completar todas las declaraciones de tipos que faltan en Exploradores.hs.
 
 -- Evaluar main para correr todos los tests
